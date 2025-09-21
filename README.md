@@ -23,9 +23,4 @@ It provides a flight search API using **Express.js** and the **SerpAPI Google Fl
 
 ---
 
-## ⚙️ Setup (Local)
 
-### 1. Clone repo
-```bash
-git clone https://github.com/your-username/airkart-backend.git
-cd airkart-backend
