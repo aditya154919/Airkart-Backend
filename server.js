@@ -53,7 +53,6 @@
 
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -67,12 +66,12 @@ app.use(
   })
 );
 
-// calculate return date
-function getReturnDate(outbound_date, return_date) {
-  if (return_date) return return_date;
 
-  const date = new Date(outbound_date);
-  date.setDate(date.getDate() + 7); // add 7 days
+function getReturnDate(outbound_date, return_date) {
+  if (return_date) return return_date; 
+
+  const date = new Date(outbound_date); 
+  date.setDate(date.getDate() + 7);     // add 7 days
   return date.toISOString().split("T")[0]; // format: YYYY-MM-DD
 }
 
