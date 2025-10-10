@@ -1,51 +1,58 @@
 
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import fetch from "node-fetch";
+const express = require("express");
+const cors = require("cors");
+const fetch = require("node-fetch"); 
+require("dotenv").config();
+const cookieParser = require("cookie-parser");
 
-dotenv.config();
+const { connect } = require("./config/databse"); // DB connect
+const user = require("./routes/user"); // user routes
+
 const app = express();
+app.use(express.json());
+app.use(cookieParser())
 
-//  frontend origins
+
 const allowedOrigins = [
-  "http://localhost:5173",               // local dev
-  "http://localhost:5174",               // local dev alternate
-  process.env.FRONTEND_URL               // deployed frontend from .env
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  process.env.FRONTEND_URL,
 ];
 
-// CORS middleware
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like Postman)
-      if (!origin) return callback(null, true);
-
+      if (!origin) return callback(null, true); 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.warn("Blocked by CORS:", origin);
-        callback(new Error("Not allowed by CORS"));
+        callback(null, false); 
       }
     },
     credentials: true,
-    methods: ["GET"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
   })
 );
 
-// claculate return date
+connect();
+
+
+app.use("/api/v1", user);
+
+
 function getReturnDate(outbound_date, return_date) {
   if (return_date) return return_date;
   const date = new Date(outbound_date);
-  date.setDate(date.getDate() + 7); // default return after 7 days
-  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+  date.setDate(date.getDate() + 7);
+  return date.toISOString().split("T")[0];
 }
 
-// Flight Search API
+
 app.get("/api/flights", async (req, res) => {
   try {
     const { from, to, outbound_date, return_date } = req.query;
-    console.log("Received Query Params:", req.query);
 
     if (!from || !to || !outbound_date) {
       return res.status(400).json({ error: "Missing required parameters" });
@@ -55,7 +62,9 @@ app.get("/api/flights", async (req, res) => {
     const API_KEY = process.env.SERPAPI_KEY;
 
     if (!API_KEY) {
-      return res.status(500).json({ error: "Missing SerpAPI key in environment" });
+      return res
+        .status(500)
+        .json({ error: "Missing SerpAPI key in environment" });
     }
 
     const url = `https://serpapi.com/search.json?engine=google_flights&departure_id=${from}&arrival_id=${to}&outbound_date=${outbound_date}&return_date=${finalReturnDate}&currency=USD&hl=en&api_key=${API_KEY}`;
@@ -63,7 +72,6 @@ app.get("/api/flights", async (req, res) => {
     console.log("Fetching URL:", url);
 
     const response = await fetch(url);
-
     if (!response.ok) {
       return res
         .status(response.status)
@@ -77,7 +85,10 @@ app.get("/api/flights", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/",(req,res)=>{
+  res.send("API WORKING");
+})
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
