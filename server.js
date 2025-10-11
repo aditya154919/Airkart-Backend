@@ -102,34 +102,34 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 require("dotenv").config();
 const cookieParser = require("cookie-parser");
-
-const { connect } = require("./config/databse"); // DB connect
-const user = require("./routes/user"); // user routes
+const { connect } = require("./config/databse");
+const user = require("./routes/user");
 
 const app = express();
 
-// --- Middleware setup ---
 app.use(express.json());
 app.use(cookieParser());
 
-// --- ✅ CORS Setup ---
+// ✅ ALLOWED ORIGINS
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-  process.env.FRONTEND_URL, // Must be set in Render dashboard
+  "https://airkartapp123.vercel.app", // your Vercel frontend
+  process.env.FRONTEND_URL, // backup for env-based config
 ];
 
+// ✅ CORS FIX
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow mobile apps or tools
+      if (!origin) return callback(null, true); // allow tools/postman
       if (allowedOrigins.includes(origin)) {
         console.log("✅ CORS allowed for:", origin);
         callback(null, true);
       } else {
         console.warn("❌ CORS blocked for:", origin);
-        callback(new Error("Not allowed by CORS"), false);
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
@@ -137,16 +137,14 @@ app.use(
   })
 );
 
-// --- ✅ Ensure preflight requests are handled ---
+// ✅ Handle preflight OPTIONS requests
 app.options("*", cors());
 
-// --- Connect Database ---
 connect();
 
-// --- Routes ---
 app.use("/api/v1", user);
 
-// --- Flight Search API ---
+// --- your flights route ---
 function getReturnDate(outbound_date, return_date) {
   if (return_date) return return_date;
   const date = new Date(outbound_date);
@@ -173,8 +171,6 @@ app.get("/api/flights", async (req, res) => {
 
     const url = `https://serpapi.com/search.json?engine=google_flights&departure_id=${from}&arrival_id=${to}&outbound_date=${outbound_date}&return_date=${finalReturnDate}&currency=USD&hl=en&api_key=${API_KEY}`;
 
-    console.log("Fetching URL:", url);
-
     const response = await fetch(url);
     if (!response.ok) {
       return res
@@ -190,11 +186,10 @@ app.get("/api/flights", async (req, res) => {
   }
 });
 
-// --- Test Route ---
+// --- Root test ---
 app.get("/", (req, res) => {
-  res.send("✅ API is Working Fine!");
+  res.send("✅ Backend API working fine on Render");
 });
 
-// --- Server Listen ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
