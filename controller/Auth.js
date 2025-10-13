@@ -1,11 +1,9 @@
-
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../modules/User");
 const { text } = require("express");
 require("dotenv").config();
 const transporter = require("../config/nodemailer");
-
 
 exports.signup = async (req, res) => {
   try {
@@ -34,28 +32,35 @@ exports.signup = async (req, res) => {
       password: hashPassword,
     });
 
-    const token = jwt.sign({id: user._id},process.env.JWT_SECRET,{expiresIn:"7d"});
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
-    res.cookie('token',token,{
-      httpOnly:true,
-      secure:process.env.NODE_ENV === "production",
-      sameSite:process.env.NODE_ENV === "production" ? "none":"strict",
-      maxAge: 7*24*60*60*1000,
-    })
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     //send welcome mail
     const mailOptions = {
-      from:process.env.SENDER_EMAIL,
-      to:email,
-      subject:"Welcome to Airkart",
-      text:`Welcome to Airkart , Your Account has been created with email is ${email}`
-    }
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: "Welcome to Airkart",
+      text: `Welcome to Airkart , Your Account has been created with email is ${email}`,
+    };
 
     await transporter.sendMail(mailOptions);
 
     return res.status(200).json({
       success: true,
       message: "User created successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (error) {
     console.log(error);
@@ -92,21 +97,28 @@ exports.login = async (req, res) => {
         message: "Password incorrect",
       });
     }
-    
-    const token = jwt.sign({id: user._id},process.env.JWT_SECRET,{expiresIn:"7d"});
 
-    res.cookie('token',token,{
-      httpOnly:true,
-      secure:process.env.NODE_ENV === "production",
-      sameSite:process.env.NODE_ENV === "production" ? "none":"strict",
-      maxAge: 7*24*60*60*1000,
-    })
-    
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(200).json({
-      success:true,
-      message:"login successfully",
-    })
+  success: true,
+  message: "Login successful",
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+  },
+});
+
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -116,38 +128,41 @@ exports.login = async (req, res) => {
   }
 };
 
-
 // logout
 
-exports.logout = async(req,res) =>{
-  try{
-    res.clearCookie('token',{
-      httpOnly:true,
-      secure:process.env.NODE_ENV === "production",
-      sameSite:process.env.NODE_ENV === "production" ? "none":"strict",
-      maxAge: 7*24*60*60*1000,
-    })
+exports.logout = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
+    res.clearCookie("token", {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+});
+
+  } catch {
     return res.status(200).json({
-      success:true,
-      message:"logout success",
-    })
+      success: false,
+      message: "logout unsuccess",
+    });
   }
-  catch{
-   return res.status(200).json({
-      success:false,
-      message:"logout unsuccess",
-    })
-  }
-}
+};
 
 // checkif user is authenticated or not
 
-exports.isAuthenticated = async(req,res) =>{
+exports.isAuthenticated = async (req, res) => {
   try {
-    return res.json({success:true})
-  } catch (error) {
-    return res.json({success:false, message:error.message})
-  }
-}
+    const token = req.cookies.token;
+    if (!token) return res.json({ success: false });
 
+    jwt.verify(token, process.env.JWT_SECRET);
+    return res.json({ success: true });
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+};

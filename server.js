@@ -8,6 +8,8 @@ const cookieParser = require("cookie-parser");
 const { connect } = require("./config/databse"); // DB connect
 const user = require("./routes/user"); // user routes
 
+
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser())
@@ -40,6 +42,7 @@ connect();
 
 
 app.use("/api/v1", user);
+const paymentRoutes = require("./routes/amount");
 
 
 function getReturnDate(outbound_date, return_date) {
@@ -66,6 +69,10 @@ app.get("/api/flights", async (req, res) => {
         .status(500)
         .json({ error: "Missing SerpAPI key in environment" });
     }
+
+    
+    app.use("/api/payment", paymentRoutes);
+
 
     const url = `https://serpapi.com/search.json?engine=google_flights&departure_id=${from}&arrival_id=${to}&outbound_date=${outbound_date}&return_date=${finalReturnDate}&currency=USD&hl=en&api_key=${API_KEY}`;
 

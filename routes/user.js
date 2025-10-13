@@ -21,8 +21,9 @@ router.post("/send-reset-otp", sendResetOtp);
 router.post("/reset-pass", resetPass);
 router.get("/data", Authmiddleware, userDetails);
 
-
-
-
 module.exports = router;
+
+
+
+
 

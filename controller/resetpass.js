@@ -1,107 +1,109 @@
+
 const express = require("express");
 const User = require("../modules/User");
 const transporter = require("../config/nodemailer");
-require("dotenv").config();
 const bcrypt = require("bcrypt");
+require("dotenv").config();
 
-exports.sendResetOtp = async(req,res) =>{
-    const {email} = req.body;
-    if(!email){
-        return res.json({
-            success:false,
-            message:"Plese enter email"
-        })
-    }
-    try{
-       const user  =  await User.findOne({email});
-       if(!user){
-        return res.json({
-            success:false,
-            message:"user does not exist"
-        })
-       }
 
-     const otp = String(Math.floor(100000 + Math.random() * 900000));
+exports.sendResetOtp = async (req, res) => {
+  const { email } = req.body;
 
-     user.resetOtp = otp;
-     user.resetOtpExpiredAt = Date.now() + 5*60*1000;
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter an email address",
+    });
+  }
 
-     await user.save();
-
-     const mailOption = {
-      from:process.env.SENDER_EMAIL,
-      to:user.email,
-      subject:"Your Reset Password verification Code",
-      text:`Your Reset password OTP is: ${otp}. use this to Reset your password`
-     }
-
-     await transporter.sendMail(mailOption);
-     return res.status(200).json({
-        success:true,
-        message:`OTP sent successfully at ${user.email}`
-     })
-    }
-    catch{
-         return res.status(400).json({
-            success:false,
-            message:"Reset OTP not sent"
-        })
-    }
-}
-
-// reset pass
-
-exports.resetPass = async(req,res) =>{
-    const{email,resetOtp,newpassword} = req.body;
-    if(!email || !resetOtp || !newpassword){
-        return res.json({
-            success:false,
-            message:"please fill all details "
-        })
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User does not exist",
+      });
     }
 
-    try {
-        const user  = await User.findOne({email});
-        if(!user){
-            return res.json({
-                success:false,
-                message:"User not found"
-            })
-        }
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
 
-        if(user.resetOtp === "" || user.resetOtp !=resetOtp){
-            return res.json({
-                success:false,
-                message:"Invalid otp"
-            })
-        }
+    user.resetOtp = otp;
+    user.resetOtpExpiredAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+    await user.save();
 
-        if(user.resetOtpExpiredAt <Date.now()){
-            return res.json({
-                success:false,
-                message:"OTP expired"
-            })
-        }
+    const mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: user.email,
+      subject: "Your Reset Password Verification Code",
+      text: `Your password reset OTP is: ${otp}. It will expire in 5 minutes.`,
+    };
 
-        const hashPassword = await bcrypt.hash(newpassword,10);
+    await transporter.sendMail(mailOptions);
 
-        user.password = hashPassword;
-        user.resetOtp = "";
-        user.resetOtpExpiredAt = 0;
-
-        await user.save();
-
-        return res.status(200).json({
-            success:true,
-            message:"Password Changed"
-        })
+    return res.status(200).json({
+      success: true,
+      message: `OTP sent successfully to ${user.email}`,
+    });
+  } catch (error) {
+    console.error("Send Reset OTP Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send reset OTP",
+    });
+  }
+};
 
 
+exports.resetPass = async (req, res) => {
+  const { email, otp, newPassword } = req.body; 
 
-    } catch (error) {
-        return res.status(400).json({
-            success:false,
-            message:"Pass not reset "
-        })
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Please fill in all details",
+    });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
-}
+
+    if (!user.resetOtp || user.resetOtp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    if (user.resetOtpExpiredAt < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired, please request a new one",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    user.resetOtp = "";
+    user.resetOtpExpiredAt = 0;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while resetting password",
+    });
+  }
+};
