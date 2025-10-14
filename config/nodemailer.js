@@ -55,7 +55,7 @@ if (isProduction) {
     },
   };
 } else {
-  // 🧪 Local development: use SMTP (works on localhost)
+ 
   transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
     port: 587,
@@ -66,7 +66,7 @@ if (isProduction) {
     tls: { rejectUnauthorized: false },
   });
 
-  // Optional: test connection locally
+  
   transporter.verify((error, success) => {
     if (error) {
       console.error("❌ SMTP connection failed:", error);
