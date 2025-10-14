@@ -15,17 +15,22 @@
 // module.exports = transporter;
 
 
-
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 require("dotenv").config();
 
 let transporter;
 
-if (process.env.NODE_ENV === "production") {
-  // Use Brevo HTTPS API on Render
+// Detect if running on Render (production)
+const isProduction = process.env.NODE_ENV === "production";
+
+// 💡 Log environment info (optional)
+console.log(`📦 Mail mode: ${isProduction ? "BREVO API (production)" : "SMTP (local)"}`);
+
+if (isProduction) {
+  // ✅ Use Brevo HTTPS API (works perfectly on Render)
   transporter = {
-    sendMail: async ({ to, subject, html }) => {
+    sendMail: async ({ to, subject, html, text }) => {
       try {
         await axios.post(
           "https://api.brevo.com/v3/smtp/email",
@@ -33,24 +38,24 @@ if (process.env.NODE_ENV === "production") {
             sender: { name: "Airkart Support", email: process.env.SMTP_USER },
             to: [{ email: to }],
             subject,
-            htmlContent: html,
+            htmlContent: html || `<p>${text}</p>`,
           },
           {
             headers: {
-              "accept": "application/json",
+              accept: "application/json",
               "api-key": process.env.BREVO_API_KEY,
               "content-type": "application/json",
             },
           }
         );
-        console.log("✅ Email sent via Brevo API");
+        console.log(`✅ Email sent via Brevo API to ${to}`);
       } catch (err) {
-        console.error("❌ Email sending failed:", err.response?.data || err.message);
+        console.error("❌ Brevo API failed:", err.response?.data || err.message);
       }
     },
   };
 } else {
-  // Local: use Nodemailer
+  // 🧪 Local development: use SMTP (works on localhost)
   transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
     port: 587,
@@ -59,6 +64,15 @@ if (process.env.NODE_ENV === "production") {
       pass: process.env.SMTP_PASS,
     },
     tls: { rejectUnauthorized: false },
+  });
+
+  // Optional: test connection locally
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("❌ SMTP connection failed:", error);
+    } else {
+      console.log("✅ SMTP server ready to send emails locally");
+    }
   });
 }
 
