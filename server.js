@@ -30,11 +30,12 @@ app.use(
         callback(null, true);
       } else {
         console.warn("Blocked by CORS:", origin);
-        callback(null, false); 
+        callback(null, true); 
       }
     },
-    credentials: true,
+    
     methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   })
 );
 
