@@ -4,10 +4,15 @@ const path = require("path");
 const axios = require("axios");
 
 const generateTicketPDF = async (ticket, user, passengers) => {
-  const dirPath = path.join(__dirname, "../tickets");
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+  // ✅ Use /tmp in production (Render allows writing only here)
+  const baseDir =
+    process.env.NODE_ENV === "production"
+      ? "/tmp"
+      : path.join(__dirname, "../tickets");
 
-  const filePath = path.join(dirPath, `Ticket_${ticket._id}.pdf`);
+  if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+
+  const filePath = path.join(baseDir, `Ticket_${ticket._id}.pdf`);
   const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 20 });
   const stream = fs.createWriteStream(filePath);
   doc.pipe(stream);
@@ -41,7 +46,7 @@ const generateTicketPDF = async (ticket, user, passengers) => {
     );
   doc.moveTo(140, 100).lineTo(800, 100).stroke();
 
-  // Passenger
+  // Passenger Info
   const p = passengers[0];
   doc
     .fontSize(14)
@@ -63,25 +68,22 @@ const generateTicketPDF = async (ticket, user, passengers) => {
   // Payment info
   doc.fontSize(16).fillColor(purple).text(`Total Paid: ₹${ticket.totalAmount}`, 140, 240);
 
-  // === BARCODE from frontend ===
+  // Barcode handling
   if (ticket.barcodeImage) {
     try {
       let barcodeImagePath;
       if (ticket.barcodeImage.startsWith("data:image")) {
-        // base64 image
         const base64Data = ticket.barcodeImage.replace(/^data:image\/png;base64,/, "");
-        barcodeImagePath = path.join(dirPath, `barcode_${ticket._id}.png`);
+        barcodeImagePath = path.join(baseDir, `barcode_${ticket._id}.png`);
         fs.writeFileSync(barcodeImagePath, base64Data, "base64");
       } else {
-        // URL image
         const response = await axios.get(ticket.barcodeImage, { responseType: "arraybuffer" });
-        barcodeImagePath = path.join(dirPath, `barcode_${ticket._id}.png`);
+        barcodeImagePath = path.join(baseDir, `barcode_${ticket._id}.png`);
         fs.writeFileSync(barcodeImagePath, response.data);
       }
-
       doc.image(barcodeImagePath, 140, 300, { width: 500, height: 100 });
     } catch (err) {
-      console.error("Failed to load barcode image:", err.message);
+      console.error("⚠️ Failed to load barcode image:", err.message);
     }
   }
 
@@ -90,6 +92,10 @@ const generateTicketPDF = async (ticket, user, passengers) => {
   });
 
   doc.end();
+
+  // Wait for stream to finish writing
+  await new Promise((resolve) => stream.on("finish", resolve));
+
   return filePath;
 };
 
