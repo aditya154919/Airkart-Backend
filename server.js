@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 
 const { connect } = require("./config/databse"); // DB connect
 const user = require("./routes/user"); // user routes
+const ticket = require("./routes/ticketRoutes");
 
 
 
@@ -94,6 +95,8 @@ app.get("/api/flights", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+app.use("/api/ticket",ticket);
 app.get("/",(req,res)=>{
   res.send("API WORKING");
 })

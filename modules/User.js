@@ -33,7 +33,14 @@ const userSchema = new mongoose.Schema({
     resetOtpExpiredAt:{
         type:Number,
         default:0
-    }
+    },
+    ticket:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"Ticket",
+        }
+    ]
+    
 })
 
 module.exports = mongoose.model("user", userSchema);
