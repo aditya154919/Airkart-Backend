@@ -60,35 +60,46 @@ console.log(" Ticket linked to user:", updatedUser.ticket);
     const pdfPath = await generateTicketPDF(ticket, user, savedPassengers);
 
     //  Send ticket by email 
-    try {
-      await transporter.sendMail({
-        from: process.env.SENDER_EMAIL,
-        to: user.email,
-        subject: `🎫 Airkart Ticket Confirmation - ${flight.airline || "Airline"}`,
-        html: `
-          <h2>Dear ${user.name || "Passenger"},</h2>
-          <p>Your flight ticket has been successfully booked!</p>
-          <p><b>Airline:</b> ${flight.airline || "Airline"}</p>
-          <p><b>Flight No:</b> ${flight.flightNumber}</p>
-          <p><b>From:</b> ${flight.departureCity}</p>
-          <p><b>To:</b> ${flight.arrivalCity}</p>
-          <p><b>Departure:</b> ${new Date(flight.departureTime).toLocaleString()}</p>
-          <p><b>Arrival:</b> ${new Date(flight.arrivalTime).toLocaleString()}</p>
-          <p><b>Total Fare:</b> ₹${totalAmount}</p>
-          <p><b>Payment Method:</b> ${paymentMethod}</p>
-          <hr />
-          <p>Thank you for choosing <b>Airkart</b>! Wishing you a pleasant journey ✈️</p>
-        `,
-        attachments: [
-          {
-            filename: `Ticket_${ticket._id}.pdf`,
-            path: pdfPath,
-          },
-        ],
-      });
-    } catch (emailError) {
-      console.warn("⚠️ Failed to send email:", emailError.message);
-    }
+   try {
+  await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to: user.email,
+    subject: `🎫 Airkart Ticket Confirmation - ${flight.airline || "Airline"}`,
+    html: `
+      <h2>Dear ${user.name || "Passenger"},</h2>
+      <p>Your flight ticket has been successfully booked!</p>
+      <p><b>Airline:</b> ${flight.airline || "Airline"}</p>
+      <p><b>Flight No:</b> ${flight.flightNumber}</p>
+      <p><b>From:</b> ${flight.departureCity}</p>
+      <p><b>To:</b> ${flight.arrivalCity}</p>
+      <p><b>Departure:</b> ${new Date(flight.departureTime).toLocaleString()}</p>
+      <p><b>Arrival:</b> ${new Date(flight.arrivalTime).toLocaleString()}</p>
+      <p><b>Total Fare:</b> ₹${totalAmount}</p>
+      <p><b>Payment Method:</b> ${paymentMethod}</p>
+      <hr />
+      <p>Thank you for choosing <b>Airkart</b>! ✈️</p>
+    `,
+    attachments: [{ filename: `Ticket_${ticket._id}.pdf`, path: pdfPath }],
+  });
+} catch (emailError) {
+  console.warn("⚠️ SMTP failed, trying Brevo API:", emailError.message);
+
+  await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "api-key": process.env.BREVO_API_KEY,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "Airkart", email: process.env.SENDER_EMAIL },
+      to: [{ email: user.email }],
+      subject: `🎫 Airkart Ticket Confirmation - ${flight.airline || "Airline"}`,
+      htmlContent: `<h3>Dear ${user.name},</h3><p>Your flight booking is confirmed!</p>`,
+    }),
+  });
+}
+
 
     return res.status(200).json({
       success: true,
