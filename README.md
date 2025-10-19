@@ -1,7 +1,7 @@
 # ✈️ Airline Reservation Backend (Airkart)
 
 This is the **backend service** for the Airline Reservation System.  
-It provides a flight search API using **Express.js** and the **SerpAPI Google Flights engine**.
+It provides a flight search API using **Express.js**,**MongoDB* and the **SerpAPI Google Flights engine**.
 
 ---
 
@@ -17,7 +17,9 @@ It provides a flight search API using **Express.js** and the **SerpAPI Google Fl
 ## 🛠️ Tech Stack
 - Node.js (ES Modules)
 - Express.js
+- MongoDB
 - SerpAPI
+- SMPT Protocol
 - CORS
 - dotenv
 
