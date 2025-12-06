@@ -1,47 +1,70 @@
 const { type } = require("express/lib/response");
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        required:true,
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
     },
-    email:{
-        type:String,
-        required:true,
+    email: {
+      type: String,
+      required: true,
     },
-    password:{
-        type:String,
-        required:true,
+    password: {
+      type: String,
+      default: null,
     },
-    verifyOtp:{
-        type:String,
-        default:""
+    providers: { type: [String], default: ["google"] },
+    emailVerified: { type: Boolean, default: false },
+    googleId: {
+      type: String,
     },
-    verifyOtpExpiredAt:{
-        type:Number,
-        default:0
+    avatar: {
+      type: String,
     },
-    isAccountVerified:{
-        type:Boolean,
-        default:false,
+    avatarId:{
+      type:String,
+      default:null
     },
-    resetOtp:{
-        type:String,
-        default:"",
+    dateOfBirth:{
+      type:String,
+      default:null
     },
-    resetOtpExpiredAt:{
-        type:Number,
-        default:0
+    aadharNo:{
+      type:String,
+      default:null
     },
-    ticket:[
-        {
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"Ticket",
-        }
-    ]
-    
-})
+    age:{
+     type:Number,
+     default:null
+    },
+    verifyOtp: {
+      type: String,
+      default: null,
+    },
+    isLoggedin: {
+      type: Boolean,
+      default: false,
+    },
+    mobileNo: {
+      type:String,
+    },
+    resetOtp: {
+      type: String,
+      default: null,
+    },
+    resetOtpExpiredAt: {
+      type: Number,
+      default: null,
+    },
+    ticket: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Ticket",
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("user", userSchema);
-

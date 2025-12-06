@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Ticket = require("../modules/Ticket");
 
-// GET tickets for  user
 router.get("/user/:userid", async (req, res) => {
   try {
     const { userid } = req.params;

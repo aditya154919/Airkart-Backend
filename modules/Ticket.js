@@ -19,6 +19,7 @@ const ticketSchema = new mongoose.Schema({
     arrivalCity: String,
     departureTime: String,
     arrivalTime: String,
+    flightLogo: String,
   },
   totalAmount: Number,
   paymentMethod: String,
@@ -26,6 +27,6 @@ const ticketSchema = new mongoose.Schema({
     type: Date, 
     default: Date.now 
   },
-});
+},{timestamps:true});
 
 module.exports = mongoose.model("Ticket", ticketSchema);

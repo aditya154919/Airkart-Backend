@@ -1,19 +1,15 @@
 
-
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 require("dotenv").config();
 
 let transporter;
-
-// Detect if running on Render (production)
 const isProduction = process.env.NODE_ENV === "production";
 
-// 💡 Log environment info (optional)
 console.log(`📦 Mail mode: ${isProduction ? "BREVO API (production)" : "SMTP (local)"}`);
 
 if (isProduction) {
-  // ✅ Use Brevo HTTPS API (works perfectly on Render)
+
   transporter = {
     sendMail: async ({ to, subject, html, text }) => {
       try {

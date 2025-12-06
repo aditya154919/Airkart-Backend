@@ -1,9 +1,9 @@
-
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../modules/User");
 require("dotenv").config();
 const fetch = require("node-fetch");
+const session = require("../modules/session");
 
 
 const sendEmail = async (to, subject, htmlContent) => {
@@ -33,7 +33,7 @@ exports.signup = async (req, res) => {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res
-        .status(400)
+        .status(404)
         .json({ success: false, message: "Please fill all details" });
     }
 
@@ -58,6 +58,7 @@ exports.signup = async (req, res) => {
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+    res.redirect(`${process.env.CLIENT_URL}/auth-success`);
 
     //  email via Brevo
     sendEmail(
@@ -69,7 +70,7 @@ exports.signup = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "User created successfully",
-      user: { id: user._id, name: user.name, email: user.email,ticket:user.ticket },
+      user: { id: user._id, name: user.name, email: user.email,},
     });
   } catch (error) {
     console.error("Signup error:", error.message);
@@ -101,21 +102,31 @@ exports.login = async (req, res) => {
         .status(403)
         .json({ success: false, message: "Incorrect password" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      const existingsession = await session.findOne({userId:user._id});
+      if(existingsession){
+        await session.deleteMany({userid:user._id})
+      }
+
+      await session.create({userid:user._id});
+      const asscesstoken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+    const refreshtoken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
 
-    res.cookie("token", token, {
+    res.cookie("token", refreshtoken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 100,
     });
-
+     user.isLoggedin = true
+     await user.save()
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      user: { id: user._id, name: user.name, email: user.email },
+      user
     });
   } catch (error) {
     console.error("Login error:", error.message);
@@ -128,12 +139,22 @@ exports.login = async (req, res) => {
 // LOGOUT
 exports.logout = async (req, res) => {
   try {
+    const userId = req.userId;
+    if (!userId) {
+      // If userId is missing, the request is unauthorized (or middleware didn't run)
+      console.log("Logout attempted without userId");
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    console.log("hello")
+    await session.deleteMany({userid:userId})
+    await User.findByIdAndUpdate(userId,{isLoggedin:false});
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     });
-
+     await session.deleteMany({user:userId});
+     await User.findByIdAndUpdate(userId,{isLoggedin:false});
     return res
       .status(200)
       .json({ success: true, message: "Logout successful" });

@@ -31,6 +31,6 @@ const passengerSchema = new  mongoose.Schema({
     //     required:true,
     //     index: { expires: 0 },
     // }
-})
+},{timestamps:true})
 
 module.exports = mongoose.model("passenger",passengerSchema);

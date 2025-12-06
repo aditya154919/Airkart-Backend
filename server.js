@@ -3,17 +3,22 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch"); 
 require("dotenv").config();
+require("./GoogleAuth/passport"); 
 const cookieParser = require("cookie-parser");
-
+const passport = require("passport");
 const { connect } = require("./config/databse"); // DB connect
 const user = require("./routes/user"); // user routes
 const ticket = require("./routes/ticketRoutes");
+const authRoute = require("./routes/authRoute")
 
 
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser())
+app.use(passport.initialize());
+
+app.use(express.urlencoded({extended:false}))
 
 
 const allowedOrigins = [
@@ -46,7 +51,8 @@ connect();
 
 app.use("/api/v1", user);
 const paymentRoutes = require("./routes/amount");
-
+app.use("/api/payment", paymentRoutes);
+app.use("/api/v1/auth",authRoute);
 
 function getReturnDate(outbound_date, return_date) {
   if (return_date) return return_date;
@@ -74,7 +80,7 @@ app.get("/api/flights", async (req, res) => {
     }
 
     
-    app.use("/api/payment", paymentRoutes);
+    
 
 
     const url = `https://serpapi.com/search.json?engine=google_flights&departure_id=${from}&arrival_id=${to}&outbound_date=${outbound_date}&return_date=${finalReturnDate}&currency=USD&hl=en&api_key=${API_KEY}`;

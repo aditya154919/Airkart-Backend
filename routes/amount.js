@@ -1,11 +1,12 @@
 const express = require("express");
-const { createorder, verifyPayment } = require("../controller/paymentconstoller");
+const { createorder } = require("../controller/paymentconstoller");
+const { Authmiddleware } = require("../middleware/Authmiddleware");
+
+
 const router = express.Router();
 
 
-
-
-router.post("./createorder", createorder);
-router.post('./verifypayment', verifyPayment)
+router.post("/createorder",Authmiddleware ,createorder);
+// router.post("/verifypayment", validate)
 
 module.exports = router;
