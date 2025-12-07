@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
       default:null
     },
     age:{
-     type:Number,
+     type:String,
      default:null
     },
     verifyOtp: {
